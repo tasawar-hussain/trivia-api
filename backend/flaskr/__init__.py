@@ -39,11 +39,22 @@ def create_app(test_config=None):
                              "GET,PUT,POST,DELETE,OPTIONS")
         return response
 
-    '''
-    @TODO:
-    Create an endpoint to handle GET requests
-    for all available categories.
-    '''
+    @app.route('/categories')
+    def retrieve_categories():
+        """
+        Create an endpoint to handle GET requests
+        for all available categories.
+        """
+        categories = Category.query.order_by(Category.type).all()
+        categories = {category.id: category.type for category in categories}
+
+        if len(categories) == 0:
+            abort(404)
+
+        return jsonify({
+            'success': True,
+            'categories': categories
+        })
 
     @app.route("/questions")
     def retrieve_questions():
