@@ -1,8 +1,9 @@
-from flask import Flask, request, abort, jsonify
-from flask_cors import CORS
 import random
 
-from models import setup_db, Question, Category
+from flask import Flask, abort, jsonify, request
+from flask_cors import CORS
+
+from models import Category, Question, setup_db
 
 QUESTIONS_PER_PAGE = 10
 
@@ -49,10 +50,7 @@ def create_app(test_config=None):
         if len(categories) == 0:
             abort(404)
 
-        return jsonify({
-            'success': True,
-            'categories': categories
-        })
+        return jsonify({'success': True, 'categories': categories})
 
     @app.route("/questions")
     def retrieve_questions():
@@ -79,23 +77,20 @@ def create_app(test_config=None):
             "current_category": None
         })
 
-
     @app.route("/questions/<question_id>", methods=['DELETE'])
     def delete_question(question_id):
         """
         Create an endpoint to DELETE question using a question ID.
         """
         try:
-            question = Question.query.filter(Question.id == question_id).one_or_none()
+            question = Question.query.filter(
+                Question.id == question_id).one_or_none()
 
             if question is None:
                 abort(404)
 
             question.delete()
-            return jsonify({
-                'success': True,
-                'deleted': question_id
-            })
+            return jsonify({'success': True, 'deleted': question_id})
 
         except Exception as ex:
             print(str(ex))
@@ -135,7 +130,6 @@ def create_app(test_config=None):
         except:
             abort(422)
 
-
     @app.route('/questions/search', methods=['POST'])
     def search_questions():
         """
@@ -160,7 +154,6 @@ def create_app(test_config=None):
             'current_category': None
         })
 
-
     @app.route('/categories/<int:category_id>/questions', methods=['GET'])
     def retrieve_questions_by_category(category_id):
         """
@@ -181,17 +174,41 @@ def create_app(test_config=None):
         except:
             abort(422)
 
-    '''
-    @TODO:
-    Create a POST endpoint to get questions to play the quiz.
-    This endpoint should take category and previous question parameters
-    and return a random questions within the given category,
-    if provided, and that is not one of the previous questions.
+    @app.route('/quizzes', methods=['POST'])
+    def play_quiz():
+        """
+        Create a POST endpoint to get questions to play the quiz.
+        This endpoint should take category and previous question parameters
+        and return a random questions within the given category,
+        if provided, and that is not one of the previous questions.
+        """
 
-    TEST: In the "Play" tab, after a user selects "All" or a category,
-    one question at a time is displayed, the user is allowed to answer
-    and shown whether they were correct or not.
-    '''
+        try:
+            body = request.get_json()
+
+            quiz_category = body.get('quiz_category', None)
+            category_type = quiz_category['type']
+            category_id = quiz_category['id']
+
+            previous_questions = body.get('previous_questions', None)
+            previous_questions = Question.id.notin_((previous_questions))
+
+            if category_type:
+                available_questions = Question.query.filter(previous_questions).filter_by(
+                    category=category_id).all()
+            else:
+                available_questions = Question.query.filter(
+                    previous_questions).all()
+
+            new_question = None
+            if len(available_questions) > 0:
+                random_pos = random.randrange(0, len(available_questions))
+                new_question = available_questions[random_pos].format()
+
+            return jsonify({'success': True, 'question': new_question})
+        except Exception as ex:
+            print("Error occurred while fetching question", str(ex))
+            abort(422)
 
     @app.errorhandler(404)
     def not_found(error):
