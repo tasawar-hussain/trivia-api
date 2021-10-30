@@ -210,6 +210,14 @@ def create_app(test_config=None):
             print("Error occurred while fetching question", str(ex))
             abort(422)
 
+    @app.errorhandler(400)
+    def bad_request(error):
+        return jsonify({
+            "success": False,
+            "error": 400,
+            "message": "bad request"
+        }), 400
+
     @app.errorhandler(404)
     def not_found(error):
         return (
@@ -232,12 +240,12 @@ def create_app(test_config=None):
             422,
         )
 
-    @app.errorhandler(400)
+    @app.errorhandler(500)
     def bad_request(error):
         return jsonify({
             "success": False,
-            "error": 400,
-            "message": "bad request"
-        }), 400
+            "error": 500,
+            "message": "Internal server error"
+        }), 500
 
     return app
