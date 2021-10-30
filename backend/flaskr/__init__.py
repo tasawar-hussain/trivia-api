@@ -127,7 +127,8 @@ def create_app(test_config=None):
                 'created': question.id,
             })
 
-        except:
+        except Exception as ex:
+            print(str(ex))
             abort(422)
 
     @app.route('/questions/search', methods=['POST'])
@@ -141,7 +142,7 @@ def create_app(test_config=None):
         search_term = body.get('searchTerm', None)
 
         if not search_term:
-            abort(404)
+            abort(422)
 
         search_results = Question.query.order_by(Question.id).filter(
             Question.question.ilike(f'%{search_term}%')
@@ -171,7 +172,8 @@ def create_app(test_config=None):
                 'total_questions': len(questions),
                 'current_category': category_id
             })
-        except:
+        except Exception as ex:
+            print(str(ex))
             abort(422)
 
     @app.route('/quizzes', methods=['POST'])
