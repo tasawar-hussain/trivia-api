@@ -2,8 +2,8 @@ import random
 
 from flask import Flask, abort, jsonify, request
 from flask_cors import CORS
-
 from models import Category, Question, setup_db
+from sqlalchemy.sql.expression import func
 
 QUESTIONS_PER_PAGE = 10
 
@@ -13,13 +13,12 @@ def paginate_questions(request, selection):
     helper function for pagination
     """
     page = request.args.get("page", 1, type=int)
-    start = (page - 1) * QUESTIONS_PER_PAGE
-    end = start + QUESTIONS_PER_PAGE
+    offset = (page-1) * QUESTIONS_PER_PAGE
 
-    books = [book.format() for book in selection]
-    current_books = books[start:end]
+    query = selection.offset(offset).limit(QUESTIONS_PER_PAGE).all()
+    questions = [question.format() for question in query]
 
-    return current_books
+    return questions
 
 
 def create_app(test_config=None):
@@ -61,8 +60,9 @@ def create_app(test_config=None):
         number of total questions, current category, categories.
         """
 
-        selection = Question.query.order_by(Question.id).all()
+        selection = Question.query.order_by(Question.id)
         current_questions = paginate_questions(request, selection)
+
         categories = Category.query.order_by(Category.type).all()
         categories = {category.id: category.type for category in categories}
 
@@ -72,7 +72,7 @@ def create_app(test_config=None):
         return jsonify({
             "success": True,
             "questions": current_questions,
-            "total_questions": len(selection),
+            "total_questions": selection.count(),
             "categories": categories,
             "current_category": None
         })
@@ -196,18 +196,15 @@ def create_app(test_config=None):
             previous_questions = Question.id.notin_((previous_questions))
 
             if category_type:
-                available_questions = Question.query.filter(previous_questions).filter_by(
-                    category=category_id).all()
+                new_question = Question.query.filter(previous_questions).filter_by(
+                    category=category_id).order_by(func.random()).first()
             else:
-                available_questions = Question.query.filter(
-                    previous_questions).all()
+                new_question = Question.query.filter(
+                    previous_questions).order_by(func.random()).first()
 
-            new_question = None
-            if len(available_questions) > 0:
-                random_pos = random.randrange(0, len(available_questions))
-                new_question = available_questions[random_pos].format()
+            print(new_question)
 
-            return jsonify({'success': True, 'question': new_question})
+            return jsonify({'success': True, 'question': new_question.format()})
         except Exception as ex:
             print("Error occurred while fetching question", str(ex))
             abort(422)

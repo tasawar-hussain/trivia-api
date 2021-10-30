@@ -1,11 +1,20 @@
 import os
-from sqlalchemy import Column, String, Integer, create_engine
-from flask_sqlalchemy import SQLAlchemy
-import json
 
-database_name = "trivia"
-host = 'localhost:5432'
-database_path = f"postgresql://{host}/{database_name}"
+from dotenv import find_dotenv, load_dotenv
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import Column, Integer, String
+
+# Load environment variables from .env
+load_dotenv(find_dotenv())
+
+# Connect to the database
+SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URI")
+SQLALCHEMY_TRACK_MODIFICATIONS = False
+SQLALCHEMY_ECHO = True
+FLASK_APP = os.environ.get("FLASK_APP")
+FLASK_ENV = os.environ.get("FLASK_ENV")
+
+
 
 db = SQLAlchemy()
 '''
@@ -14,9 +23,12 @@ setup_db(app)
 '''
 
 
-def setup_db(app, database_path=database_path):
+def setup_db(app, database_path=SQLALCHEMY_DATABASE_URI):
     app.config["SQLALCHEMY_DATABASE_URI"] = database_path
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = SQLALCHEMY_TRACK_MODIFICATIONS
+    app.config["SQLALCHEMY_ECHO"] = SQLALCHEMY_ECHO
+    app.config['FLASK_APP'] = FLASK_APP
+    app.config['FLASK_ENV'] = FLASK_ENV
     db.app = app
     db.init_app(app)
     db.create_all()
